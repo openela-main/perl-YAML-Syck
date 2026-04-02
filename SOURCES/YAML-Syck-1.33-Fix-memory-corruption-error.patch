@@ -1,0 +1,52 @@
+From d4ec4ab3aaf1fa736a6195c2d1317450dc1f2c4b Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Tina=20M=C3=BCller?= <cpan2@tinita.de>
+Date: Tue, 2 Oct 2018 22:56:00 +0200
+Subject: [PATCH] Fix memory corruption error
+
+Currently the following examples abort the program:
+
+"- &anchor1 &anchor2 x"
+double free or corruption (fasttop)
+
+"- &anchor1 &anchor2 x"
+double free or corruption (fasttop)
+
+"x: &anchor1 &anchor2 x"
+malloc(): memory corruption (fast)
+
+"key1: &a value1
+&b *a : value2"
+double free or corruption (fasttop)
+
+This fix will prevent the abort and falsely accept invalid YAML.
+Instead the code should return an error/throw an exception, but I don't
+know how to do this here.
+So this is just the less optimal solution, avoiding a program abort.
+---
+ handler.c | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
+
+diff --git a/handler.c b/handler.c
+index d9cf8ec..5de4359 100644
+--- a/handler.c
++++ b/handler.c
+@@ -32,6 +32,16 @@ syck_hdlr_add_anchor( SyckParser *p, char *a, SyckNode *n )
+ {
+     SyckNode *ntmp = NULL;
+ 
++    if (n->anchor != NULL) {
++        /*
++         * Note: An error should be returned here. But this is better than
++         * not checking at all because it will abort the program with a
++         * memory corruption error.
++         * Happens if you have two anchors after each other or an anchor
++         * before an alias
++         * */
++        return n;
++    }
+     n->anchor = a;
+     if ( p->bad_anchors != NULL )
+     {
+-- 
+2.53.0
+

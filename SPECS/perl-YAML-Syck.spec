@@ -7,11 +7,15 @@
 
 Name:           perl-YAML-Syck
 Version:        1.30
-Release:        5%{?dist}
+Release:        6%{?dist}
 Summary:        Fast, lightweight YAML loader and dumper
 License:        BSD and MIT
 URL:            http://search.cpan.org/dist/YAML-Syck/
 Source0:        http://www.cpan.org/authors/id/T/TO/TODDR/YAML-Syck-%{version}.tar.gz
+# Fix memory corruption error
+Patch0:         YAML-Syck-1.33-Fix-memory-corruption-error.patch
+# Fix heap buffer overflow in the YAML emitter - CVE-2026-4177
+Patch1:         YAML-Syck-1.37-Fix-CVE-2026-4177.patch
 BuildRequires:  coreutils
 BuildRequires:  findutils
 BuildRequires:  gcc
@@ -58,6 +62,8 @@ structures to YAML strings, and the other way around.
 
 %prep
 %setup -q -n YAML-Syck-%{version}
+%patch -P0 -p1
+%patch -P1 -p1
 
 # Unbundle core and unused modules
 rm -rvf inc/{parent.pm,PerlIO.pm,Scalar/,Test/}
@@ -85,6 +91,10 @@ make test
 %{_mandir}/man3/YAML::Syck.3*
 
 %changelog
+* Wed Mar 25 2026 Jitka Plesnikova <jplesnik@redhat.com> - 1.30-6
+- Resolves: RHEL-156475
+- Fix CVE-2026-4177
+
 * Fri Feb 09 2018 Fedora Release Engineering <releng@fedoraproject.org> - 1.30-5
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_28_Mass_Rebuild
 
